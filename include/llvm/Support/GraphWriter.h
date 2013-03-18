@@ -33,6 +33,7 @@
 namespace llvm {
 
 namespace DOT {  // Private functions...
+  std::string EscapeString(const std::string &Label, NodeShape::Type nodeShape);
   std::string EscapeString(const std::string &Label);
 
   /// \brief Get a color string for this node number. Simply round-robin selects
@@ -166,13 +167,22 @@ public:
 
   void writeNode(NodeType *Node) {
     std::string NodeAttributes = DTraits.getNodeAttributes(Node, G);
+    NodeShape::Type NShape = DTraits.getNodeShape();
 
-    O << "\tNode" << static_cast<const void*>(Node) << " [shape=record,";
+    O << "\tNode" << static_cast<const void*>(Node) 
+                  << " [shape="<< DTraits.getNodeShapeString(NShape) << ",";
     if (!NodeAttributes.empty()) O << NodeAttributes << ",";
-    O << "label=\"{";
+    O << "label=";
+    if (NShape == NodeShape::none)
+      O << "<<TABLE " <<
+          "BORDER=\"0\" CELLBORDER=\"1\" " << 
+          "CELLSPACING=\"0\" CELLPADDING=\"4\">";
+    else if (NShape == NodeShape::record)
+      O << "\"{";
 
     if (!DTraits.renderGraphFromBottomUp()) {
-      O << DOT::EscapeString(DTraits.getNodeLabel(Node, G));
+      O << DOT::EscapeString(DTraits.getNodeLabel(Node, G), 
+                             DTraits.getNodeShape());
 
       // If we should include the address of the node in the label, do so now.
       if (DTraits.hasNodeAddressLabel(Node, G))
@@ -180,7 +190,7 @@ public:
 
       std::string NodeDesc = DTraits.getNodeDescription(Node, G);
       if (!NodeDesc.empty())
-        O << "|" << DOT::EscapeString(NodeDesc);
+        O << "|" << DOT::EscapeString(NodeDesc, DTraits.getNodeShape());
     }
 
     std::string edgeSourceLabels;
@@ -196,7 +206,8 @@ public:
     }
 
     if (DTraits.renderGraphFromBottomUp()) {
-      O << DOT::EscapeString(DTraits.getNodeLabel(Node, G));
+      O << DOT::EscapeString(DTraits.getNodeLabel(Node, G), 
+                             DTraits.getNodeShape());
 
       // If we should include the address of the node in the label, do so now.
       if (DTraits.hasNodeAddressLabel(Node, G))
@@ -204,7 +215,7 @@ public:
 
       std::string NodeDesc = DTraits.getNodeDescription(Node, G);
       if (!NodeDesc.empty())
-        O << "|" << DOT::EscapeString(NodeDesc);
+        O << "|" << DOT::EscapeString(NodeDesc, DTraits.getNodeShape());
     }
 
     if (DTraits.hasEdgeDestLabels()) {
@@ -214,7 +225,8 @@ public:
       for (; i != e && i != 64; ++i) {
         if (i) O << "|";
         O << "<d" << i << ">"
-          << DOT::EscapeString(DTraits.getEdgeDestLabel(Node, i));
+          << DOT::EscapeString(DTraits.getEdgeDestLabel(Node, i), 
+                               DTraits.getNodeShape());
       }
 
       if (i != e)
@@ -222,7 +234,12 @@ public:
       O << "}";
     }
 
-    O << "}\"];\n";   // Finish printing the "node" line
+    if (NShape == NodeShape::none)
+      O << "</TABLE>>";
+    else if (NShape == NodeShape::record)
+      O << "}\"";
+      
+    O << "];\n";   // Finish printing the "node" line
 
     // Output all of the edges now
     child_iterator EI = GTraits::child_begin(Node);

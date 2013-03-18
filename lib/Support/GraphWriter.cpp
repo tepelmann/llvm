@@ -21,6 +21,54 @@ using namespace llvm;
 static cl::opt<bool> ViewBackground("view-background", cl::Hidden,
   cl::desc("Execute graph viewer in the background. Creates tmp file litter."));
 
+std::string llvm::DOT::EscapeString(const std::string &Label,
+                                    NodeShape::Type nodeShape) {
+  if (nodeShape == NodeShape::record)
+    EscapeString(Label);
+  else if (nodeShape == NodeShape::none) {
+    // HTML Node. We need to escape <, >, &, "
+    std::string Str(Label);
+    for (unsigned i = 0; i < Str.length(); ++i)
+      switch (Str[i]) {
+        case '\n':
+          // Align=Left preserves the code formatting
+          Str.replace(i, 1, "<BR ALIGN=\"LEFT\"/>");
+          i += 17;
+          break;
+        case '\t':
+          Str.replace(i, 1, "  ");
+          break;
+        case '\\':
+          if (i+1 < Str.length())
+            switch (Str[i+1]) {
+              case '<': case '>':
+                Str.erase(i, 1);
+                continue;
+              default: break;
+            }
+          break;
+        case '<':
+          Str.replace(i, 1, "&lt;");
+          i += 3;
+          break;
+        case '>':
+          Str.replace(i, 1, "&gt;");
+          i += 3;
+          break;
+        case '&':
+          Str.replace(i, 1, "&amp;");
+          i += 3;
+          break;
+        case '"':
+          Str.replace(i, 1, "&quot;");
+          i += 5;
+          break;
+  }
+  return Str;
+  }
+  assert(0 && "Unknown NodeShape!");
+}
+
 std::string llvm::DOT::EscapeString(const std::string &Label) {
   std::string Str(Label);
   for (unsigned i = 0; i != Str.length(); ++i)

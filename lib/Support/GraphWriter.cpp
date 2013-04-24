@@ -41,7 +41,7 @@ std::string llvm::DOT::EscapeString(const std::string &Label,
         case '\\':
           if (i+1 < Str.length())
             switch (Str[i+1]) {
-              case '<': case '>':
+              case '<': case '>': case '&': case '"':
                 Str.erase(i, 1);
                 continue;
               default: break;

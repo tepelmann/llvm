@@ -76,10 +76,14 @@ InlineCost AllInsideLoopInliner::getInlineCost(CallSite CS) {
   Function *Caller = CS.getCaller();
 
   if (Caller->getName().equals(InliningFunction)) {
-    if (Callee && !Callee->isDeclaration() && ICA->isInlineViable(*Callee)) {
-      errs() << "inlineing '" << Callee->getName() << " into " << Caller->getName() << "'\n";
+    if (Callee && !Callee->isDeclaration()
+               && ICA->isInlineViable(*Callee)
+               && !Callee->getAttributes().hasAttribute(AttributeSet::FunctionIndex, Attribute::NoInline)) {
+      errs() << "inlining '" << Callee->getName() << " into " << Caller->getName() << "'\n";
       return InlineCost::getAlways();
     }
+    if (Callee && Callee->getAttributes().hasAttribute(AttributeSet::FunctionIndex, Attribute::NoInline))
+      errs() << "not inlining because '" << Callee->getName() << "' has noinline attribute\n";
   }
   return InlineCost::getNever();
 }

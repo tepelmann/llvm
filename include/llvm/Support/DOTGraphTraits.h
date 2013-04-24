@@ -18,8 +18,16 @@
 #define LLVM_SUPPORT_DOTGRAPHTRAITS_H
 
 #include <string>
+#include <assert.h>
 
 namespace llvm {
+
+namespace NodeShape {
+  enum Type {
+    record,
+    none
+  };
+}
 
 /// DefaultDOTGraphTraits - This class provides the default implementations of
 /// all of the DOTGraphTraits methods.  If a specialization does not need to
@@ -140,6 +148,26 @@ public:
   static std::string getEdgeDestLabel(const void *, unsigned) {
     return "";
   }
+
+  /// getNodeShape - Default is NodeShape::record
+  /// If you want HTML Node Labels use NodeShape::none.
+  static NodeShape::Type getNodeShape() {
+    return NodeShape::record;
+  }
+
+  /// getNodeShapeString - Return the string representation of the NodeShape.
+  /// This gets placed in every node of the graph as the shape property
+  /// ([shape="getNodeShapeString(...)").
+  static std::string getNodeShapeString(NodeShape::Type NodeShape) {
+    if (NodeShape == NodeShape::record)
+      return "record";
+    else if (NodeShape == NodeShape::none)
+      return "none";
+    assert(0 && "Unknown NodeShape!");
+  }
+  
+#define HTML_NODE_CELL_BEGIN  "\\<TR\\>\\<TD\\>"
+#define HTML_NODE_CELL_END    "\\</TD\\>\\</TR\\>"
 
   /// addCustomGraphFeatures - If a graph is made up of more than just
   /// straight-forward nodes and edges, this is the place to put all of the
